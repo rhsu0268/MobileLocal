@@ -1,0 +1,36 @@
+/* styles.css */
+/* this is a stylesheet for index.html */
+
+
+h1
+{
+    text-align: center;
+}
+
+body
+{
+    background-color: #94E9FF;
+}
+
+#main 
+{
+    text-align: center;
+}
+
+#news
+{
+    text-align: center;
+   
+}
+
+#weather
+{
+    text-align: center;
+}
+
+#locations
+{
+    text-align: center;
+}
+
+

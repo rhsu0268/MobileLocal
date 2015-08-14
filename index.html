@@ -1,0 +1,228 @@
+<!-- index.html -->
+<!-- This displays the homepage for the Mobile Local User interface -->
+
+<html>
+<head>
+    <title>Mobile Local</title>
+    <meta name="viewport" content=initial-scale=1.0"/> 
+     <link rel="stylesheet" type="text/css" href="styles.css"/>
+     <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+     <script type="text/javascript">
+     
+     
+        // make the yql query and get back the response for news
+        function getYQLnews(query, f)
+        {
+            var url = "https://query.yahooapis.com/v1/public/yql?q=" + encodeURIComponent(query) + "&format=json&diagnostics=true";
+            
+            
+            $.getJSON(url, function(response) {
+                //console.log("YQL:\t" + query);
+                
+                if (response.query.results == null)
+                {
+		            return false;
+		        }
+		        else 
+		        {
+		            f(response);
+		        }
+            
+            });
+        }
+
+        // get the news using the input
+        function getNews(loc)
+        {
+            // create the query in YQL
+            var query = "SELECT * FROM rss WHERE url = 'http://news.google.com/news?geo=" + encodeURIComponent(loc) + "&output=rss'";
+		    
+            // call getYQLnews to make the JSON request to get back news
+		    getYQLnews(query, function(response) {
+
+		        //console.log(response.query.results.item);
+
+		        // reset the text in the news div
+		        $("#news").text("");
+		        
+		        $("#news").append("Here's the news: " + "<br><br>");
+
+                // for each of the news items, we want to append it to the unordered list
+		        $.each(response.query.results.item, function() {
+		            
+		            $("#news").append("<li>" + "<a href='" + this.link + "'>" + this.title + "</a>" + "</li>");
+		        });
+
+                // append a line
+		        $("#news").append("<br>");
+		    });
+        }
+        
+        // get the forecast
+        function getForecast(loc)
+        {
+           // make the yql query
+           var query = "SELECT * FROM weather.forecast WHERE woeid in (select woeid from geo.places(1)where text=" + "'" + loc + "'" + ")";
+           
+           // call getYQL query to make the JSON request
+
+           getYQLweather(query, function(response) {
+           
+                
+                var condition = response.query.results.channel.item.condition
+
+                // clear the div 
+                $("#weather").text("");
+
+
+                // style the css in the div
+                $("#weather").css("top", "50px");
+                $("#weather").css("text-align", "center");
+
+                // print out the temperature 
+                $("#weather").append("The temperature now is " + condition.temp + '&deg;' + "F" + " and the weather is " + condition.text + "." + "<br>");
+                $("#weather").append("Here is the five day forecast:" + "<br><br>");
+               
+                // create a table 
+                var html = "<table style='margin: 0px auto;' border='1'>"
+            
+                // for each day's forecast, print out the day, high, low, and condition 
+                $.each(response.query.results.channel.item.forecast, function() {
+		            
+		            html += "<tr>" + "<td>" + this.day + "</td>" + "<td>" + this.high + '&deg;' + "F" + "</td>" + "<td>" + this.low + '&deg;' + "F" + "</td>"+ "<td>" + this.text + "</td>" +"</tr>"; 
+		            //" High: " + this.high + "</td>" + " Low: " + this.low + " " + this.text + "</tr>");
+		        });
+		        
+		   
+		        // style the table giving it a border
+		        $("#weather").append(html); 
+		        $("table").css("border", "1px solid black");
+		        $("table").css("border-collapse", "collapse");  
+		        $("#weather").append("<br>");
+		        
+           });
+           
+          
+           
+        }
+        
+        // make the JSON request
+        function getYQLweather(query, f)
+        {
+            var url = "https://query.yahooapis.com/v1/public/yql?q=" + encodeURIComponent(query) + "&format=json&diagnostics=true";
+
+            $.getJSON(url, function(response) {
+               
+		         f(response);
+		        
+            });
+        }
+        
+
+        // get the news and forecast with geoLocation 
+        function getGeo()
+        {
+            $("#locations").text("");
+
+            // carry out the geo lookup
+            if (navigator.geolocation)
+            {
+                navigator.geolocation.getCurrentPosition(function(position) {
+
+                // get the latitude and longitude 
+                var latitude = position.coords.latitude;
+                var longitude = position.coords.longitude;
+
+                console.log(latitude + " " + longitude);
+                
+                // call getYQL to make the JSON request
+                geoCode(latitude, longitude, function(response) 
+                {
+                    
+                    var zipCode = response.query.results.json.results[0].address_components[6].short_name;
+                    
+                    getNews(zipCode);
+                    getForecast(zipCode);
+                });
+                
+                
+                
+            });
+            }
+            else 
+            {
+                alert("Geolocation is not supported by your browser!");
+            }
+           
+        }
+        
+        // get the results from geolocation 
+        function geoCode(latitude, longitude, f)
+        {
+            var url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=" + latitude + "," + longitude + "&sensor=true";
+            var query = "SELECT * FROM json WHERE url = " + "'" + url + "'" ;
+            getYQLnews(query, f);
+        }
+        
+        
+        var locations = [];
+        function main()
+        {
+            $("#locations").text("");
+            var loc = $('#text').val();
+            getNews(loc);
+            getForecast(loc);
+      
+            locations.push(loc);
+           
+           
+            // use localStorage to store locations the user searched for     
+            localStorage.setItem("locations", JSON.stringify(locations));
+            
+        }
+        
+        // stores the locations in local storage
+        function showLocations()
+        {
+            
+            $("#locations").text("");
+            
+            //localStorage.getItem("locations");
+            
+            var result = JSON.parse(localStorage.getItem("locations"));
+            console.log(result);
+            $("#news").text("");
+            $("#weather").text("");
+            $("#locations").css("text-align", "center");
+            
+            for (var i = 0; i < result.length; i++)
+            {
+                $("#locations").append("<li>" + result[i] + "</li>");
+            }
+        }
+        
+        
+     </script>
+</head>
+<body>
+    <h1>Mobile Local</h1>
+    
+    <form id = "main">
+        <p>Please enter a state, city, or zipcode:</p>
+        <input id="text" name="info" placeholder="State, city, or zipcode" onfocus="this.placeholder = ''" onblur="this.placeholder='State, city, or zipcode'">
+        <br>
+        <br>
+        <input id="input" value="Submit" onclick="main(); " type=button>
+        
+        <br><br>
+        <input id="geo" value="Use My Current Location" onclick="getGeo();" type=button>
+        <br><br>
+        <input id="history" value="Recent Searches"onclick="showLocations();" type=button>
+    </form>
+    
+    
+    <div id="weather"></div>
+    <div id="news"></div>
+    <div id="locations"></div>
+</body>
+</html>
