@@ -6,5 +6,6 @@ Site that allows users to get the weather and news information in their local ar
 File Structure 
 --------------
 
-index.html 
+index.html
+ 
 styles.css
